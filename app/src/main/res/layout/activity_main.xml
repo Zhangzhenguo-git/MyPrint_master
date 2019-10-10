@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:text="Wifi局域网-And-IP"
+            android:gravity="center_vertical"
+            android:paddingLeft="10dp"/>
+        <Button
+            android:id="@+id/bt_PrintPhoto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="打印图片"/>
+        <Button
+            android:id="@+id/bt_PrintHTML"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="打印HTML"/>
+        <Button
+            android:id="@+id/bt_PrintCustom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="打印Custom文档"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:text="蓝牙打印"
+            android:gravity="center_vertical"
+            android:paddingLeft="10dp"/>
+
+        <Button
+            android:id="@+id/bt_BluetoothPrint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="打印Custom文档"/>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

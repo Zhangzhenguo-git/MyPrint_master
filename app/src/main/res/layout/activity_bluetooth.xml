@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".BLuetoothActivity">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:id="@+id/ll_button_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:gravity="center"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/bt_Search_Bluetooth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="查找设备"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"/>
+            <Button
+                android:id="@+id/bt_Print"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="打印"
+                android:layout_marginLeft="20dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_PairedBluetooth"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="#f0f0f0"
+            android:text="已配对设备信息 "
+            android:gravity="center_vertical"
+            android:paddingLeft="20dp"
+            android:paddingTop="10dp" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rl_PairedBluetooth_View"
+            android:layout_width="match_parent"
+            android:layout_height="230dp"
+            android:layout_below="@id/tv_PairedBluetooth">
+        </androidx.recyclerview.widget.RecyclerView>
+        <TextView
+            android:id="@+id/tv_Bluetooth"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="#f0f0f0"
+            android:text="新设备 "
+            android:gravity="center_vertical"
+            android:paddingLeft="20dp"
+            android:paddingTop="10dp"
+            android:layout_below="@id/rl_PairedBluetooth_View"/>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rl_Bluetooth_View"
+            android:layout_width="match_parent"
+            android:layout_height="230dp"
+            android:layout_below="@id/tv_Bluetooth"
+            android:layout_above="@id/ll_button_layout">
+        </androidx.recyclerview.widget.RecyclerView>
+
+    </RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
