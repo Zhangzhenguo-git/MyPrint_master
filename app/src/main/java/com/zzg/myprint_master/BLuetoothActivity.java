@@ -220,10 +220,10 @@ public class BLuetoothActivity extends AppCompatActivity implements MyBroadcastR
 
     @Override
     public void showInfo(String message) {
-        toast(message);
         if (message.equals("蓝牙已开启")) {
             myShowProgressDialog("正在搜索中");
             bluetoothUtil.startBluetooth();
+            toast(message);
         } else if (message.equals("蓝牙已关闭")) {
             if (beanBondedList != null) {
                 beanBondedList = new ArrayList<>();
@@ -237,12 +237,15 @@ public class BLuetoothActivity extends AppCompatActivity implements MyBroadcastR
                     blueToothAdapter.notifyDataSetChanged();
                 }
             }
+            toast(message);
         } else if (message.equals("开始搜索")) {
             showBondedBluetooth();
+            toast(message);
         } else if (message.equals("搜索完成")) {
             if (progressBar != null) {
                 progressBar.dismiss();
             }
+            toast(message);
         } else if (message.equals("完成配对")) {
             showBondedBluetooth();
         }
@@ -269,7 +272,8 @@ public class BLuetoothActivity extends AppCompatActivity implements MyBroadcastR
             @Override
             public void onItemClick(BluetoothDevice... device) {
                 if (bluetoothUtil.createBond(device[0])) {
-                    bluetoothUtil.connectDevice(device[0]);
+                    connectDevice(device[0],TASK_TYPE_CONNECT);
+//                    bluetoothUtil.connectDevice(device[0]);
                     clickDevice = device[0];
                 }
             }

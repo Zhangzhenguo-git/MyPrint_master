@@ -1,6 +1,5 @@
 package com.zzg.myprint_master;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.print.PrintHelper;
 
@@ -10,9 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.pdf.PdfDocument;
 import android.os.Bundle;
 import android.os.CancellationSignal;
@@ -24,17 +20,16 @@ import android.print.PrintDocumentAdapter;
 import android.print.PrintDocumentInfo;
 import android.print.PrintJob;
 import android.print.PrintManager;
-import android.print.PrinterInfo;
 import android.print.pdf.PrintedPdfDocument;
-import android.printservice.PrintDocument;
 import android.util.Log;
-import android.util.Printer;
 import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.Toast;
 
+//import com.aspose.words.Document;
+//import com.aspose.words.SaveFormat;
 import com.tbruyelle.rxpermissions2.Permission;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
@@ -44,8 +39,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.annotation.ElementType;
-import java.util.jar.Attributes;
 
 import io.reactivex.functions.Consumer;
 
@@ -53,7 +46,9 @@ public class MainActivity extends AppCompatActivity {
     private PrintHelper printHelper;
     private Context context;
     private Button btPrintPhoto;
+    private Button bt_PrintUrlHTML;
     private Button bt_PrintHTML;
+    private Button bt_PrintContainImgHTML;
     private Button bt_PrintCustom;
     private Button bt_BluetoothPrint;
 
@@ -71,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
         openPermissions();
         btPrintPhoto=findViewById(R.id.bt_PrintPhoto);
         bt_PrintHTML=findViewById(R.id.bt_PrintHTML);
+        bt_PrintContainImgHTML=findViewById(R.id.bt_PrintContainImgHTML);
+        bt_PrintUrlHTML=findViewById(R.id.bt_PrintUrlHTML);
         bt_PrintCustom=findViewById(R.id.bt_PrintCustom);
         bt_BluetoothPrint=findViewById(R.id.bt_BluetoothPrint);
         myClick();
@@ -82,23 +79,36 @@ public class MainActivity extends AppCompatActivity {
                 doPhotoPrint();
             }
         });
+        bt_PrintUrlHTML.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                doHTMLPrint(0);
+            }
+        });
         bt_PrintHTML.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                doHTMLPrint();
+                doHTMLPrint(1);
+            }
+        });
+        bt_PrintContainImgHTML.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                doHTMLPrint(2);
             }
         });
         bt_PrintCustom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                doPrint();
+                String wordFilePath=Environment.getExternalStorageDirectory()+"/测试文件打印1.docx";
+                String pdfFilePath=Environment.getExternalStorageDirectory()+"/测试文件打印1.pdf";
+                doPrint(pdfFilePath);
             }
         });
         bt_BluetoothPrint.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 startActivityForResult(new Intent(MainActivity.this,BLuetoothActivity.class),0);
-//                startActivityForResult(new Intent(MainActivity.this,Test.class),0);
             }
         });
 
@@ -114,14 +124,14 @@ public class MainActivity extends AppCompatActivity {
         //此属性会自动等比例调整图像大小，使图像充满整个打印区域，即让图像充满整个纸张
         //缺点是，打印图像的（上下左右边缘会有一部分打印不出来）
         // printHelper.setScaleMode(PrintHelper.SCALE_MODE_FILL);
-        Bitmap bitmap= BitmapFactory.decodeResource(getResources(),R.drawable.test_print_img);
+        Bitmap bitmap= BitmapFactory.decodeResource(getResources(),R.drawable.scan);
         printHelper.printBitmap("TestPrint",bitmap);
     }
 
     /**
      * HTML打印
      */
-    private void doHTMLPrint(){
+    private void doHTMLPrint(int printType){
         WebView webView = new WebView(context);
         webView.setWebViewClient(new WebViewClient(){
             public boolean shouldOverrideUrlLoading(WebView webView1,String url){
@@ -131,43 +141,49 @@ public class MainActivity extends AppCompatActivity {
             //注意，调用打印方法时，一定要先让页面加载完成，否则会出现打印不完整或空白。
             @Override
             public void onPageFinished(WebView view, String url) {
-                createWebPrintJob();
-                mWebView=null;
+                Log.d("执行",url);
+                createWebPrintJob(view);
+                mWebView = null;
             }
         });
         // 创建要加载的代码
-        String htmlDocument = "<html><body><h1>Test Content测试打印，测试打印</h1><p>Testing, " +
-                "testing, testing...测试测试测试测试</p></body></html>";
         //baseUrl:网页地址，data:请求的某段代码，mimeType:加载网页的类型，encode：编码格式，historyUrl：可用历史记录
-        webView.loadDataWithBaseURL(null,htmlDocument,"text/HTML","UTF-8",null);
-        //如果希望打印的页面含有图片，那就把要显示的图片放入工程的assets/目录下,
-//        webView.loadDataWithBaseURL("file:///android_asset/images/",htmlDocument,"text/HTML","UTF-8",null);
+        //在线打印
+        String htmlUrl="http://43.248.49.204:8080/2020/03/31/MjAwMzMxNjczNzQzNTUw.html";
+        //指定html字符串打印
+        String htmlDocument = "<html><body><h1>Test Content测试打印，测试打印</h1><p>Testing, testing, testing...测试测试测试测试</p></body></html>";
+        if (printType==0){
+            webView.loadUrl(htmlUrl);
+        }else if (printType==1){
+            webView.loadDataWithBaseURL(null, htmlDocument,"text/HTML","UTF-8",null);
+        }else if (printType==2){
+            //如果希望打印的页面含有图片，那就把要显示的图片放入工程的assets/目录下,
+            webView.loadDataWithBaseURL("file:///android_asset/images/ic_launcher.png",htmlDocument,"text/HTML","UTF-8",null);
+        }
         mWebView=webView;
     }
-    private void createWebPrintJob(){
+    private void createWebPrintJob(WebView webView){
         //首先创建一个打印管理器对象并实例化
-        PrintManager printManager= (PrintManager) getSystemService(Context.PRINT_SERVICE);
+        PrintManager printManager= (PrintManager)getSystemService(Context.PRINT_SERVICE);
         //获取打印适配器实例
-        PrintDocumentAdapter printDocumentAdapter=mWebView.createPrintDocumentAdapter();
+        PrintDocumentAdapter pDAdapter=webView.createPrintDocumentAdapter();
         //使用名称和适配起来打印名称
         String jobName=getString(R.string.app_name)+"Document";
-        printManager.print(jobName,printDocumentAdapter,new PrintAttributes.Builder().build());
+        printManager.print(jobName,pDAdapter,new PrintAttributes.Builder().build());
 
     }
-
 
 
     /**
      * 自定义打印
      */
-    private void doPrint(){
+    private void doPrint(String filePath){
         // Get a PrintManager instance 获取打印驱动对象
         PrintManager printManager= (PrintManager) getSystemService(Context.PRINT_SERVICE);
         // Set job name, which will be displayed in the print queue 设置作业名称，该名称将显示在打印队列中
         String jobName=getString(R.string.app_name)+"Document";
         // Start a print job, passing in a PrintDocumentAdapter implementation 启动打印作业，传入printdocumentadapter实现
         // to handle the generation of a print document处理打印文档的生成
-        String filePath= Environment.getExternalStorageDirectory()+"/测试文件打印.pdf";
         Toast.makeText(context, "打印文件路径："+filePath, Toast.LENGTH_SHORT).show();
         printManager.print(jobName,new MyPrintDocumentAdapter(context,filePath),null);
     }
@@ -179,16 +195,22 @@ public class MainActivity extends AppCompatActivity {
         private Context mContext;
         private String mFilePath;
         private PrintedPdfDocument mPdfDocument;
-        public MyPrintDocumentAdapter(Context context,String filePath){
-            this.mContext=context;
-            this.mFilePath=filePath;
+
+        public PdfDocument myPdfDocument;
+        public int totalpages = 1;//设置一共打印一张纸
+
+        public MyPrintDocumentAdapter(Context context, String filePath) {
+            this.mContext = context;
+            this.mFilePath = filePath;
         }
+
         //当打印进程开始，该方法就将被调用，
         @Override
         public void onStart() {
             Toast.makeText(mContext, "准备开始", Toast.LENGTH_SHORT).show();
             super.onStart();
         }
+
         //当用户改变了打印输出时，比方说页面尺寸，或者页面的方向时，
         // 该函数将被调用。以此会给我们的应用重新计划打印页面的布局，
         // 另外该方法必须返回打印文档包含多少页面。
@@ -198,43 +220,21 @@ public class MainActivity extends AppCompatActivity {
                              CancellationSignal cancellationSignal,
                              LayoutResultCallback layoutResultCallback,
                              Bundle bundle) {
-            // Create a new PdfDocument with the requested page attributes
-            //使用请求的页属性创建新的pdfdocument
-            mPdfDocument=new PrintedPdfDocument(mContext,printAttributes1);
-            // Respond to cancellation request
+//            //使用请求的页属性创建新的pdfdocument
+//            mPdfDocument=new PrintedPdfDocument(mContext,printAttributes1);
             // 响应取消请求
-            if (cancellationSignal.isCanceled() ) {
+            if (cancellationSignal.isCanceled()) {
                 layoutResultCallback.onLayoutCancelled();
                 return;
             }
-//            Compute the expected number of printed pages
-//            计算预期的打印页数
-//            int pages = computePageCount(printAttributes1);
-//            if (pages > 0) {
-//                // Return print information to print framework
-//                // 将打印信息返回到打印框架
-//                PrintDocumentInfo info = new PrintDocumentInfo
-//                        .Builder("print_output.pdf")
-//                        .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
-//                        .setPageCount(pages)
-//                        .build();
-//                // Content layout reflow is complete
-//                // 内容布局回流已完成
-//                layoutResultCallback.onLayoutFinished(info, true);
-//            } else {
-//                // Otherwise report an error to the print framework
-//                //否则向打印框架报告错误
-//                layoutResultCallback.onLayoutFailed("Page count calculation failed.");
-//            }
-
+            // 将打印信息返回到打印框架
             PrintDocumentInfo info = new PrintDocumentInfo
                     .Builder("name")
                     .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
                     .build();
             layoutResultCallback.onLayoutFinished(info, true);
-
-
         }
+
         //此函数被调用后，会将打印页面渲染成一个待打印的文件，该函数
         // 可以在onLayout被调用后调用一次或多次
         @Override
@@ -244,6 +244,7 @@ public class MainActivity extends AppCompatActivity {
                             WriteResultCallback writeResultCallback) {
             InputStream input = null;
             OutputStream output = null;
+
             try {
                 input = new FileInputStream(mFilePath);
                 output = new FileOutputStream(parcelFileDescriptor.getFileDescriptor());
@@ -270,56 +271,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             Toast.makeText(mContext, "待打印状态", Toast.LENGTH_SHORT).show();
-            // Iterate over each page of the document,
-            // 遍历文档的每一页，
-            // check if it's in the output range.
-            //检查是否在输出范围内
-//            for (int i = 0; i <pageRanges.length; i++) {
-//                // Check to see if this page is in the output range.
-//                // 检查此页是否在输出范围内。
-//                if (containsPage(pageRanges, i)) {
-//                    // If so, add it to writtenPagesArray. writtenPagesArray.size()
-//                    //如果是，请将其添加到writenpagesarray。写入网页array.size（）
-//                    // is used to compute the next output page index.
-//                    //用于计算下一个输出页索引。
-//                    writtenPagesArray.append(writtenPagesArray.size(), i);
-//
-//                    PdfDocument.Page page = mPdfDocument.startPage(i);
-//                    // check for cancellation
-//                    // 检查取消
-//                    if (cancellationSignal.isCanceled()) {
-//                        writeResultCallback.onWriteCancelled();
-//                        mPdfDocument.close();
-//                        mPdfDocument = null;
-//                        return;
-//                    }
-//                    // Draw page content for printing
-//                    // 绘制打印页面内容
-//                    drawPage(page);
-////                    // Rendering is complete, so page can be finalized.
-//                    //渲染完成，因此可以完成页面。
-//                    mPdfDocument.finishPage(page);
-//                }
-//            }
-//
-//            // Write PDF document to file
-//            // 将PDF文档写入文件
-//            try {
-//                mPdfDocument.writeTo(new FileOutputStream(
-//                        parcelFileDescriptor.getFileDescriptor()));
-//            } catch (IOException e) {
-//                writeResultCallback.onWriteFailed(e.toString());
-//                return;
-//            } finally {
-//                mPdfDocument.close();
-//                mPdfDocument = null;
-//            }
-//            PageRange[] writtenPages = computeWrittenPages();
-//            // Signal the print framework the document is complete
-//            //通知打印框架文档已完成
-//            writeResultCallback.onWriteFinished(writtenPages);
 
         }
+
         //一旦打印进程结束后，该函数将会被调用。如果我们的应用有任何
         // 一次性销毁任务要执行，让这些任务在该方法内执行。这个回调方法不是必须实现的。
         @Override
@@ -327,44 +281,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(mContext, "已发送打印", Toast.LENGTH_SHORT).show();
             super.onFinish();
         }
-
-
-        private void drawPage(PdfDocument.Page page) {
-            Canvas canvas = page.getCanvas();
-            // units are in points (1/72 of an inch)
-            //单位是磅（1/72英寸）
-            int titleBaseLine = 72;
-            int leftMargin = 54;
-
-            Paint paint = new Paint();
-            paint.setColor(Color.BLACK);
-            paint.setTextSize(36);
-            canvas.drawText("Test Title", leftMargin, titleBaseLine, paint);
-
-            paint.setTextSize(11);
-            canvas.drawText("Test paragraph", leftMargin, titleBaseLine + 25, paint);
-
-            paint.setColor(Color.BLUE);
-            canvas.drawRect(100, 100, 172, 172, paint);
-        }
     }
-//    private int computePageCount(PrintAttributes printAttributes) {
-//        // default item count for portrait mode
-//        // 纵向模式的默认项目计数
-//        int itemsPerPage = 4;
-//        PrintAttributes.MediaSize pageSize = printAttributes.getMediaSize();
-//        if (!pageSize.isPortrait()) {
-//            // Six items per page in landscape orientation
-//            //横向方向每页六项
-//            itemsPerPage = 6;
-//        }
-//
-//        // Determine number of print items
-//        //确定打印项目数
-////        int printItemCount = getPrintItemCount();
-//
-//        return (int) Math.ceil(printItemCount / itemsPerPage);
-//    }
 
     /**
      * 打开权限
@@ -393,6 +310,5 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
     }
 }

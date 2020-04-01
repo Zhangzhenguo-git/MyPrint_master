@@ -2,6 +2,7 @@ package com.zzg.myprint_master.util;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothServerSocket;
@@ -38,6 +39,7 @@ public class BluetoothUtil {
     private static List<BluetoothDevice> listBluetoothDevices;
     private static Set<BluetoothDevice> setBluetoothDevices;
     private static String MY_UUID="00001101-0000-1000-8000-00805F9B34FB";
+//    private static String MY_UUID="00001117-0000-1000-8000-00805F9B34FB";
 
     public BluetoothUtil(Context mContext) {
         this.mContext = mContext;
@@ -106,6 +108,22 @@ public class BluetoothUtil {
     }
 
     /**
+     * 连接前判断下是否正在搜索或已连接其他设备
+     * @param mBluetoothSocket
+     * @return
+     */
+    public boolean isTrueDisOrConn(BluetoothSocket mBluetoothSocket){
+        if (adapter.isDiscovering()) {
+            adapter.cancelDiscovery();
+        }
+        if (mBluetoothSocket.isConnected()) {
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
      * 关闭查找
      *
      * @return
@@ -152,7 +170,30 @@ public class BluetoothUtil {
         }
         return isTrue;
     }
+    /**
+     * 获取所有已配对的打印类设备
+     */
+    public List<BluetoothDevice> getPairedPrinterDevices() {
+        return getSpecificDevice(BluetoothClass.Device.Major.IMAGING);
+    }
+    /**
+     * 从已配对设配中，删选出某一特定类型的设备展示
+     * @param deviceClass
+     * @return
+     */
+    public List<BluetoothDevice> getSpecificDevice(int deviceClass){
+        List<BluetoothDevice> devices =getListPairedBluetooth();
+        List<BluetoothDevice> printerDevices = new ArrayList<>();
 
+        for (BluetoothDevice device : devices) {
+            BluetoothClass klass = device.getBluetoothClass();
+            // 关于蓝牙设备分类参考 http://stackoverflow.com/q/23273355/4242112
+            if (klass.getMajorDeviceClass() == deviceClass)
+                printerDevices.add(device);
+        }
+
+        return printerDevices;
+    }
     /**
      * 启动连接
      * @param device
@@ -161,7 +202,6 @@ public class BluetoothUtil {
     public BluetoothSocket connectDevice(BluetoothDevice device) {
         BluetoothSocket socket = null;
         UUID uuid = UUID.fromString(MY_UUID);
-        Log.d("执行", uuid + "");
         try {
             socket = device.createRfcommSocketToServiceRecord(uuid);
             socket.connect();
