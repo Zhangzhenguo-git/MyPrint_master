@@ -1,6 +1,7 @@
 package com.zzg.myprint_master;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.databinding.DataBindingUtil;
 import androidx.print.PrintHelper;
 
 import android.Manifest;
@@ -23,6 +24,8 @@ import android.print.PrintManager;
 import android.print.pdf.PrintedPdfDocument;
 import android.util.Log;
 import android.view.View;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
@@ -32,6 +35,7 @@ import android.widget.Toast;
 //import com.aspose.words.SaveFormat;
 import com.tbruyelle.rxpermissions2.Permission;
 import com.tbruyelle.rxpermissions2.RxPermissions;
+import com.zzg.myprint_master.databinding.ActivityMainBinding;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -43,75 +47,49 @@ import java.io.OutputStream;
 import io.reactivex.functions.Consumer;
 
 public class MainActivity extends AppCompatActivity {
-    private PrintHelper printHelper;
     private Context context;
-    private Button btPrintPhoto;
-    private Button bt_PrintUrlHTML;
-    private Button bt_PrintHTML;
-    private Button bt_PrintContainImgHTML;
-    private Button bt_PrintCustom;
-    private Button bt_BluetoothPrint;
-
-    private WebView mWebView;
-    private PrintJob mPrintJob;
-    private PrintManager manager;
-    private BluetoothManager bluetoothManager;
-
-
+    private ActivityMainBinding binding;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        binding= DataBindingUtil.setContentView(this,R.layout.activity_main);
         context=MainActivity.this;
         openPermissions();
-        btPrintPhoto=findViewById(R.id.bt_PrintPhoto);
-        bt_PrintHTML=findViewById(R.id.bt_PrintHTML);
-        bt_PrintContainImgHTML=findViewById(R.id.bt_PrintContainImgHTML);
-        bt_PrintUrlHTML=findViewById(R.id.bt_PrintUrlHTML);
-        bt_PrintCustom=findViewById(R.id.bt_PrintCustom);
-        bt_BluetoothPrint=findViewById(R.id.bt_BluetoothPrint);
         myClick();
     }
     private void myClick(){
-        btPrintPhoto.setOnClickListener(new View.OnClickListener() {
+        binding.btPrintPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 doPhotoPrint();
             }
         });
-        bt_PrintUrlHTML.setOnClickListener(new View.OnClickListener() {
+        binding.btPrintUrlHTML.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 doHTMLPrint(0);
             }
         });
-        bt_PrintHTML.setOnClickListener(new View.OnClickListener() {
+        binding.btPrintHTML.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 doHTMLPrint(1);
             }
         });
-        bt_PrintContainImgHTML.setOnClickListener(new View.OnClickListener() {
+        binding.btPrintContainImgHTML.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 doHTMLPrint(2);
             }
         });
-        bt_PrintCustom.setOnClickListener(new View.OnClickListener() {
+        binding.btPrintCustom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String wordFilePath=Environment.getExternalStorageDirectory()+"/测试文件打印1.docx";
-                String pdfFilePath=Environment.getExternalStorageDirectory()+"/测试文件打印1.pdf";
+                String wordFilePath=Environment.getExternalStorageDirectory()+"/测试打印文件.docx";
+                String pdfFilePath=Environment.getExternalStorageDirectory()+"/测试打印文件.pdf";
                 doPrint(pdfFilePath);
             }
         });
-        bt_BluetoothPrint.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivityForResult(new Intent(MainActivity.this,BLuetoothActivity.class),0);
-            }
-        });
-
     }
 
     /**
@@ -143,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 Log.d("执行",url);
                 createWebPrintJob(view);
-                mWebView = null;
             }
         });
         // 创建要加载的代码
@@ -160,7 +137,6 @@ public class MainActivity extends AppCompatActivity {
             //如果希望打印的页面含有图片，那就把要显示的图片放入工程的assets/目录下,
             webView.loadDataWithBaseURL("file:///android_asset/images/ic_launcher.png",htmlDocument,"text/HTML","UTF-8",null);
         }
-        mWebView=webView;
     }
     private void createWebPrintJob(WebView webView){
         //首先创建一个打印管理器对象并实例化
@@ -172,7 +148,6 @@ public class MainActivity extends AppCompatActivity {
         printManager.print(jobName,pDAdapter,new PrintAttributes.Builder().build());
 
     }
-
 
     /**
      * 自定义打印
@@ -289,14 +264,8 @@ public class MainActivity extends AppCompatActivity {
     private void openPermissions(){
         final RxPermissions rxPermissions = new RxPermissions(MainActivity.this); // where this is an Activity or Fragment instance
         rxPermissions.requestEachCombined(
-                Manifest.permission.CAMERA,
-                Manifest.permission.READ_PHONE_STATE,
-                Manifest.permission.READ_CONTACTS,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.BLUETOOTH,
-                Manifest.permission.BLUETOOTH_ADMIN,
-                Manifest.permission.ACCESS_COARSE_LOCATION
+                Manifest.permission.READ_EXTERNAL_STORAGE
         ).subscribe(new Consumer<Permission>() {
             @Override
             public void accept(Permission permission) throws Exception {
