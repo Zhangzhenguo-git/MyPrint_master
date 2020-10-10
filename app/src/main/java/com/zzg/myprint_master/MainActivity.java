@@ -45,6 +45,7 @@ import net.lemonsoft.lemonbubble.LemonBubbleInfo;
 import net.lemonsoft.lemonbubble.LemonBubbleView;
 import net.lemonsoft.lemonbubble.interfaces.LemonBubbleMaskOnTouchContext;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -57,62 +58,34 @@ import io.reactivex.functions.Consumer;
 public class MainActivity extends AppCompatActivity {
     private Context context;
     private ActivityMainBinding binding;
-
-    final int DOWN_ERROR = 1;
-    final int DOWN_SUCCESS = 2;
-    final int PRINT_START = 3;
-    final int PRINT_FINISH = 5;
-    final int PRINT_COMPLETED = 6;
-    final int PRINT_CANCEL = 7;
-
-    final int FILE_SET = 8;
-    private PrintJob printJob;
     private int con = 0;
     private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding= DataBindingUtil.setContentView(this,R.layout.activity_main);
-        context=MainActivity.this;
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        context = MainActivity.this;
         openPermissions();
-        myClick();
-        handler = new Handler() {
-            public void handleMessage(Message msg) {
-                switch (msg.what) {
-                    case PRINT_START:
-                        LemonBubble.showRight(MainActivity.this, "准备打印，请稍后...", 1000);
-                        break;
-                    case PRINT_FINISH:
-//                    LemonBubble.showRoundProgress(MainActivity.this, "正在打印，请稍后...");
-                        final LemonBubbleInfo lemonBubbleInfo = LemonBubble.getRoundProgressBubbleInfo();
-                        lemonBubbleInfo.setTitle("正在打印，请稍后...");
-                        lemonBubbleInfo.setOnMaskTouchContext(new LemonBubbleMaskOnTouchContext() {
-                            @Override
-                            public void onTouch(LemonBubbleInfo lemonBubbleInfo, LemonBubbleView lemonBubbleView) {
-                                LemonBubble.hide();
-                            }
-                        });
-                        lemonBubbleInfo.show(MainActivity.this);
-                        break;
-                    case PRINT_COMPLETED:
-                        LemonBubble.showRight(MainActivity.this, "打印完成", 2000);
-                        break;
-                    case PRINT_CANCEL:
-                        LemonBubble.showError(MainActivity.this, "打印已取消", 2000);
-                        break;
-                    case FILE_SET:
-                        LemonBubble.showRight(MainActivity.this, "程序已将打印作业发送至打印机，请稍后...", 2000);
-                        break;
-                }
-            }
-        };
     }
-    private void myClick(){
-        binding.btPrintPhoto.setOnClickListener(new View.OnClickListener() {
+
+    private void myClick() {
+        binding.btPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 doPhotoPrint();
+            }
+        });
+        binding.btAssetsPrintPhoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                doAssetsPhotoPrint();
+            }
+        });
+        binding.btSDPrintPhoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                doSDPhotoPrint();
             }
         });
         binding.btPrintUrlHTML.setOnClickListener(new View.OnClickListener() {
@@ -136,8 +109,8 @@ public class MainActivity extends AppCompatActivity {
         binding.btPrintCustom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String wordFilePath=Environment.getExternalStorageDirectory()+"/测试打印文件.docx";
-                String pdfFilePath=Environment.getExternalStorageDirectory()+"/测试打印文件.pdf";
+                String wordFilePath = Environment.getExternalStorageDirectory() + "/测试文件打印1.docx";
+                String pdfFilePath = Environment.getExternalStorageDirectory() + "/测试文件打印.pdf";
                 doPrint(pdfFilePath);
             }
         });
@@ -145,77 +118,115 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 打印图片
+     * 打印png转pdf资源文件
      */
-    private void doPhotoPrint(){
-        PrintHelper printHelper=new PrintHelper(context);
+    private void doPhotoPrint() {
+        PhotoVerPdf photoVerPdf = new PhotoVerPdf();
+        if (photoVerPdf.ready()) {
+            doPrint(Environment.getExternalStorageDirectory() + "/测试图片打印.pdf");
+        } else {
+            LemonBubble.showError(MainActivity.this,"转换失败",1000);
+        }
+    }
+
+    /**
+     * 打印assets资源图片
+     */
+    private void doAssetsPhotoPrint() {
+        PrintHelper printHelper = new PrintHelper(context);
         //此属性会自动调整图像的大小，可以更好的把要打印的图像调整到合适的打印区域
         printHelper.setScaleMode(PrintHelper.SCALE_MODE_FIT);
         //此属性会自动等比例调整图像大小，使图像充满整个打印区域，即让图像充满整个纸张
         //缺点是，打印图像的（上下左右边缘会有一部分打印不出来）
         // printHelper.setScaleMode(PrintHelper.SCALE_MODE_FILL);
-        Bitmap bitmap= BitmapFactory.decodeResource(getResources(),R.drawable.scan);
-        printHelper.printBitmap("TestPrint",bitmap);
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.scan);
+        printHelper.printBitmap("TestPrint", bitmap);
+    }
+
+    /**
+     * 打印sd卡资源图片
+     */
+    private void doSDPhotoPrint() {
+        PrintHelper printHelper = new PrintHelper(context);
+        //此属性会自动调整图像的大小，可以更好的把要打印的图像调整到合适的打印区域
+        printHelper.setScaleMode(PrintHelper.SCALE_MODE_FIT);
+        //此属性会自动等比例调整图像大小，使图像充满整个打印区域，即让图像充满整个纸张
+        //缺点是，打印图像的（上下左右边缘会有一部分打印不出来）
+        // printHelper.setScaleMode(PrintHelper.SCALE_MODE_FILL);
+        File fileSDImg = new File(Environment.getExternalStorageDirectory() + "/测试图片打印.png");
+
+        try {
+            FileInputStream inputStream = new FileInputStream(fileSDImg);
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+            printHelper.printBitmap("TestPrint", bitmap);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
     }
+
 
     /**
      * HTML打印
      */
-    private void doHTMLPrint(int printType){
+    private void doHTMLPrint(int printType) {
         WebView webView = new WebView(context);
-        webView.setWebViewClient(new WebViewClient(){
-            public boolean shouldOverrideUrlLoading(WebView webView1,String url){
+        webView.setWebViewClient(new WebViewClient() {
+            public boolean shouldOverrideUrlLoading(WebView webView1, String url) {
                 return false;
             }
+
             //调用打印任务的入口
             //注意，调用打印方法时，一定要先让页面加载完成，否则会出现打印不完整或空白。
             @Override
             public void onPageFinished(WebView view, String url) {
-                Log.d("执行",url);
-                createWebPrintJob(view);
+                Log.d("执行", url);
+                //首先创建一个打印管理器对象并实例化
+                PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+                //获取打印适配器实例
+                PrintDocumentAdapter pDAdapter = webView.createPrintDocumentAdapter();
+                //使用名称和适配起来打印名称
+                String jobName = getString(R.string.app_name) + "Document";
+                printManager.print(jobName, pDAdapter, new PrintAttributes.Builder().build());
+//                printListener(printManager);
             }
         });
         // 创建要加载的代码
         //baseUrl:网页地址，data:请求的某段代码，mimeType:加载网页的类型，encode：编码格式，historyUrl：可用历史记录
         //在线打印
 //        String htmlUrl="http://43.248.49.204:8080/2020/03/31/MjAwMzMxNjczNzQzNTUw.html";
-        String htmlUrl="https://developer.huawei.com/consumer/cn/";
+        String htmlUrl = "https://developer.huawei.com/consumer/cn/";
         //指定html字符串打印
         String htmlDocument = "<html><body><h1>Test Content测试打印，测试打印</h1><p>Testing, testing, testing...测试测试测试测试</p></body></html>";
-        if (printType==0){
+        if (printType == 0) {
             webView.loadUrl(htmlUrl);
-        }else if (printType==1){
-            webView.loadDataWithBaseURL(null, htmlDocument,"text/HTML","UTF-8",null);
-        }else if (printType==2){
+        } else if (printType == 1) {
+            webView.loadDataWithBaseURL(null, htmlDocument, "text/HTML", "UTF-8", null);
+        } else if (printType == 2) {
             //如果希望打印的页面含有图片，那就把要显示的图片放入工程的assets/目录下,
-            webView.loadDataWithBaseURL("file:///android_asset/images/ic_launcher.png",htmlDocument,"text/HTML","UTF-8",null);
+            webView.loadDataWithBaseURL("file:///android_asset/images/ic_launcher.png", htmlDocument, "text/HTML", "UTF-8", null);
         }
-    }
-    private void createWebPrintJob(WebView webView){
-        //首先创建一个打印管理器对象并实例化
-        PrintManager printManager= (PrintManager)getSystemService(Context.PRINT_SERVICE);
-        //获取打印适配器实例
-        PrintDocumentAdapter pDAdapter=webView.createPrintDocumentAdapter();
-        //使用名称和适配起来打印名称
-        String jobName=getString(R.string.app_name)+"Document";
-        printManager.print(jobName,pDAdapter,new PrintAttributes.Builder().build());
-        printListener(printManager);
     }
 
     /**
      * 自定义打印
      */
-    private void doPrint(String filePath){
-        // Get a PrintManager instance 获取打印驱动对象
-        PrintManager printManager= (PrintManager) getSystemService(Context.PRINT_SERVICE);
-        // Set job name, which will be displayed in the print queue 设置作业名称，该名称将显示在打印队列中
-        String jobName=getString(R.string.app_name)+"Document";
-        // Start a print job, passing in a PrintDocumentAdapter implementation 启动打印作业，传入printdocumentadapter实现
-        // to handle the generation of a print document处理打印文档的生成
-//        Toast.makeText(context, "打印文件路径："+filePath, Toast.LENGTH_SHORT).show();
-        printManager.print(jobName,new MyPrintDocumentAdapter(context,filePath),null);
-        printListener(printManager);
+    private void doPrint(String filePath) {
+        if (!PDFCheck.check(filePath)) {
+            LemonBubble.showError(MainActivity.this, "文件下载失败", 2000);
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            PrintManager printManager = (PrintManager) MainActivity.this.getSystemService(Context.PRINT_SERVICE);
+            String jobName = getString(R.string.app_name) + "Document";
+            try {
+                printManager.print(jobName, new MyPrintDocumentAdapter(MainActivity.this, filePath), null);
+            } catch (RuntimeException e) {
+            } catch (Exception e) {
+            }
+        } else {
+            Toast.makeText(context, "Android 版本过低不支持自定义打印", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
@@ -237,7 +248,6 @@ public class MainActivity extends AppCompatActivity {
         //当打印进程开始，该方法就将被调用，
         @Override
         public void onStart() {
-            Toast.makeText(mContext, "准备开始", Toast.LENGTH_SHORT).show();
             super.onStart();
         }
 
@@ -274,7 +284,6 @@ public class MainActivity extends AppCompatActivity {
                             WriteResultCallback writeResultCallback) {
             InputStream input = null;
             OutputStream output = null;
-
             try {
                 input = new FileInputStream(mFilePath);
                 output = new FileOutputStream(parcelFileDescriptor.getFileDescriptor());
@@ -285,101 +294,25 @@ public class MainActivity extends AppCompatActivity {
                 }
                 writeResultCallback.onWriteFinished(new PageRange[]{PageRange.ALL_PAGES});
             } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (Exception e) {
-                e.printStackTrace();
             } finally {
                 try {
                     output.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
                 try {
                     input.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }
-            Toast.makeText(mContext, "待打印状态", Toast.LENGTH_SHORT).show();
-
-        }
-
-        //一旦打印进程结束后，该函数将会被调用。如果我们的应用有任何
-        // 一次性销毁任务要执行，让这些任务在该方法内执行。这个回调方法不是必须实现的。
-//        @Override
-//        public void onFinish() {
-//            Toast.makeText(mContext, "已发送打印", Toast.LENGTH_SHORT).show();
-//            super.onFinish();
-//        }
-    }
-
-
-
-    private void printListener(final PrintManager printManager) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            printJob = printManager.getPrintJobs().get(printManager.getPrintJobs().size() - 1);
-            final Runnable runnable = new Runnable() {
-                @Override
-                public void run() {
-                    System.out.println(con++);
-                    System.out.println("testPrint1======printJob  info=======" + printJob.getInfo());
-                    System.out.println("testPrint2======printJob  id=======" + printJob.getId());
-                    System.out.println("testPrint3======printJob  isBlocked=======" + printJob.isBlocked());
-                    System.out.println("testPrint4======printJob  isCancelled=======" + printJob.isCancelled());
-                    System.out.println("testPrint5======printJob  isCompleted=======" + printJob.isCompleted());
-                    System.out.println("testPrint6======printJob  isFailed=======" + printJob.isFailed());
-                    System.out.println("testPrint7======printJob  isQueued=======" + printJob.isQueued());
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-//                        if (printJob.isStarted()) {
-//                            System.out.println("执行启动打印");
-//                            Toast.makeText(context, "程序已将打印作业发送给打印机", Toast.LENGTH_SHORT).show();
-//                            handler.sendEmptyMessage(FILE_SET);
-//                            return;
-////                            打印完成
-//                        } else if (printJob.isCompleted()){
-//                            Toast.makeText(context, "已完成打印", Toast.LENGTH_SHORT).show();
-//                            handler.sendEmptyMessage(PRINT_COMPLETED);
-//                        }
-//                        打印作业是否已完成
-                        if (printJob.isCompleted()) {
-                            System.out.println("执行打印完成");
-                            LemonBubble.hide();
-                            handler.sendEmptyMessage(PRINT_COMPLETED);
-                            return;
-//                            是否取消打印作业
-                        } else if (printJob.isCancelled()) {
-                            System.out.println("执行取消打印");
-                            handler.sendEmptyMessage(PRINT_CANCEL);
-//                            return;
-//                            获取此打印作业是否被阻止。 *由于异常情况，该打印作业被暂停*。您可以通过以下方式请求取消
-                        } else if (printJob.isBlocked()) {
-                            System.out.println("执行打印作业是否被阻止");
-//                            打印作业是否失败
-                        } else if (printJob.isFailed()) {
-                            System.out.println("执行打印是否失败");
-//                            是否启动打印作业
-                        } else if (printJob.isStarted()) {
-                            LemonBubble.showRoundProgress(context, "正在打印，请稍后...");
-                            System.out.println("执行启动打印");
-//                                打印作业是否已排队
-                        } else if (printJob.isQueued()) {
-                            System.out.println("执行是否已排队");
-                        }else {
-                            handler.postDelayed(this, 1000);
-                        }
-                        con++;
-                    }
-                }
-            };
-            runnable.run();
+            Toast.makeText(mContext, "已准备好打印，点击右上角蓝色图标开始打印", Toast.LENGTH_SHORT).show();
         }
     }
 
     /**
      * 打开权限
      */
-    private void openPermissions(){
+    private void openPermissions() {
         final RxPermissions rxPermissions = new RxPermissions(MainActivity.this); // where this is an Activity or Fragment instance
         rxPermissions.requestEachCombined(
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -387,14 +320,14 @@ public class MainActivity extends AppCompatActivity {
         ).subscribe(new Consumer<Permission>() {
             @Override
             public void accept(Permission permission) throws Exception {
-                if (permission.granted){
-
-                    Log.d("执行","权限都通过了");
-                }else if (permission.shouldShowRequestPermissionRationale){
-                    Log.d("执行","至少有一个权限被拒绝了");
+                if (permission.granted) {
+                    Log.d("执行", "权限都通过了");
+                    myClick();
+                } else if (permission.shouldShowRequestPermissionRationale) {
+                    Log.d("执行", "至少有一个权限被拒绝了");
                     openPermissions();
-                }else {
-                    Log.d("执行","转到设置");
+                } else {
+                    Log.d("执行", "转到设置");
                 }
             }
         });

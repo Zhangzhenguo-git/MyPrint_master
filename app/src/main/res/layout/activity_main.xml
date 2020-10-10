@@ -22,10 +22,20 @@
             android:gravity="center_vertical"
             android:paddingLeft="10dp"/>
         <Button
-            android:id="@+id/bt_PrintPhoto"
+            android:id="@+id/bt_Photo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="打印图片"/>
+            android:text="打印图片转pdf"/>
+        <Button
+            android:id="@+id/bt_AssetsPrintPhoto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="打印assets图片"/>
+        <Button
+            android:id="@+id/bt_SDPrintPhoto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="打印sd卡图片"/>
         <Button
             android:id="@+id/bt_PrintUrlHTML"
             android:layout_width="match_parent"
